@@ -11,7 +11,7 @@
   margin: 0 auto;
   padding: 0 2rem;
 
-  h1 {
+  .title {
     margin-top: 80px;
     font-size: 48px;
     font-weight: 700;
@@ -20,27 +20,36 @@
 
 .postContent {
   margin-top: 66px;
+  margin-bottom: 2rem;
   max-width: 700px auto;
+  border-bottom: 1px solid var(--gray-700);
 
-  strong {
-    display: block;
-    padding: 0 auto;
-    font-size: 32px;
-    font-weight: 700;
-  }
+  .paragraphContainer {
+    margin-top: 66px;
+    strong {
+      display: block;
+      padding: 0 auto;
+      font-size: 32px;
+      font-weight: 700;
+    }
 
-  p {
-    margin-top: 50px;
-    color: var(--subtitle-color);
-    font-size: 1.125rem;
-    font-weight: 400;
-    font-style: normal;
-    line-height: 25px;
+    p {
+      margin-top: 50px;
+      color: var(--subtitle-color);
+      font-size: 1.125rem;
+      font-weight: 400;
+      font-style: normal;
+      line-height: 25px;
+    }
+    p:last-child {
+      margin-bottom: 2rem;
+    }
   }
 }
 
 .infos {
   color: var(--info-color);
+  flex-flow: wrap;
   margin-top: 1.604375rem;
   display: flex;
   align-items: center;
@@ -55,5 +64,49 @@
     margin-right: 1.7rem;
     font-weight: 400;
     font-style: normal;
+  }
+  aside {
+    width: 100%;
+    margin-top: 1rem;
+    font-style: italic;
+  }
+}
+
+.paginationContent {
+  margin-top: 1rem;
+  margin-bottom: 5rem;
+}
+
+.direction {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  .paginationLeft {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    strong {
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    a {
+      width: 100%;
+      color: var(--high-light-pink);
+    }
+  }
+
+  .paginationRight {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    strong {
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    a {
+      width: 100%;
+      color: var(--high-light-pink);
+    }
   }
 }
