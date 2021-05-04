@@ -1,23 +1,28 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { AiOutlineCalendar, AiOutlineUser } from 'react-icons/ai';
-import { GetStaticPaths, GetStaticProps, GetStaticPropsContext } from 'next';
-import { ParsedUrlQuery } from 'node:querystring';
 
 import { useRouter } from 'next/router';
 import { format, parseISO } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
-import { RichText } from 'prismic-dom';
+
 import Prismic from '@prismicio/client';
-import { useState } from 'react';
+import { UtterancesComments } from '../../components/Comments';
+
 import { getPrismicClient } from '../../services/prismic';
 
-import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 import Header from '../../components/Header';
 
+interface PostsReferences {
+  uid: string;
+  title: string;
+}
+
 interface Post {
   first_publication_date: string | null;
+  last_publication_date: string | null;
+  uid: string;
   data: {
     title: string;
     banner: {
@@ -35,9 +40,11 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  nextPost?: Post;
+  lastPost?: Post;
 }
 
-export default function Post({ post }: PostProps) {
+export default function Post({ post, nextPost, lastPost }: PostProps) {
   const router = useRouter();
   let counts = 0;
 
@@ -46,8 +53,6 @@ export default function Post({ post }: PostProps) {
       counts += body.text.split(' ').length;
     });
   });
-
-  const readTime = `${Math.round(counts / 200)} min`;
 
   if (router.isFallback) {
     return <div>Carregando...</div>;
@@ -59,7 +64,7 @@ export default function Post({ post }: PostProps) {
       <main className={styles.container}>
         <img src={post.data.banner.url} alt="banner" />
         <section className={styles.postContainer}>
-          <h1>{post.data.title}</h1>
+          <h1 className={styles.title}>{post.data.title}</h1>
           <div className={styles.infos}>
             <AiOutlineCalendar size={20} />
             <strong>
@@ -71,15 +76,47 @@ export default function Post({ post }: PostProps) {
             <strong>{post.data.author}</strong>
             <AiOutlineUser size={20} />
             <strong>4 min</strong>
+            <aside>
+              {`*editado em ${format(
+                parseISO(post.last_publication_date),
+                "dd MMM yyyy, 'às' k:m",
+                {
+                  locale: ptBR,
+                }
+              )} `}
+            </aside>
           </div>
-          {post.data.content.map(content => (
-            <div className={styles.postContent}>
-              <strong>{content.heading}</strong>
-              {content.body.map(paragraph => (
-                <p>{paragraph.text}</p>
-              ))}
+          <div className={styles.postContent}>
+            {post.data.content.map(content => (
+              <div className={styles.paragraphContainer}>
+                <strong>{content.heading}</strong>
+                {content.body.map(paragraph => (
+                  <p>{paragraph.text}</p>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className={styles.paginationContent}>
+            <div className={styles.direction}>
+              {lastPost !== null ? (
+                <div className={styles.paginationLeft}>
+                  <strong>{lastPost.data.title}</strong>
+                  <a href={`/post/${lastPost.uid}`}>Último Post</a>
+                </div>
+              ) : (
+                <div className={styles.paginationLeft} />
+              )}
+              {nextPost !== null ? (
+                <div className={styles.paginationRight}>
+                  <strong>{nextPost.data.title}</strong>
+                  <a href={`/post/${nextPost.uid}`}>Próximo Post</a>
+                </div>
+              ) : (
+                <div className={styles.paginationRight} />
+              )}
             </div>
-          ))}
+          </div>
+          <UtterancesComments />
         </section>
       </main>
     </>
@@ -90,7 +127,7 @@ export const getStaticPaths = async () => {
   const prismic = getPrismicClient();
   const posts = await prismic.query(
     [Prismic.predicates.at('document.type', 'post')],
-    { pageSize: 10 }
+    { pageSize: 3 }
   );
 
   const paths = posts.results.map(post => ({ params: { slug: post.uid } }));
@@ -104,17 +141,37 @@ export const getStaticPaths = async () => {
 export const getStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const post = await prismic.getByUID('post', params.slug, {});
+  const nextPost = await prismic
+    .queryFirst([
+      Prismic.predicates.at('document.type', 'post'),
+      Prismic.predicates.dateAfter(
+        'document.first_publication_date',
+        post.first_publication_date
+      ),
+    ])
+    .then(res => {
+      return res === undefined ? null : res;
+    });
 
-  // reduce -> primeiro par -> () => {}
-  // reduce -> segundo par -> valor inicial
-  // reduce -> parametros arrow function -> primeiro: acumulator , segundo: item
-  // OBS: sempre retornar valor calculado. Pode ser
+  const lastPost = await prismic
+    .queryFirst([
+      Prismic.predicates.at('document.type', 'post'),
+      Prismic.predicates.dateBefore(
+        'document.first_publication_date',
+        post.first_publication_date
+      ),
+    ])
+    .then(res => {
+      return res === undefined ? null : res;
+    });
 
   return {
     props: {
       post: {
         ...post,
       },
+      nextPost,
+      lastPost,
     },
   };
 };

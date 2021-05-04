@@ -11,13 +11,13 @@ import { format, parseISO } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import { getPrismicClient } from '../services/prismic';
 
-import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import Header from '../components/Header';
 
 interface Post {
   uid?: string;
   first_publication_date: string | null;
+  last_publication_date: string | null;
   data: {
     title: string;
     subtitle: string;
@@ -32,9 +32,10 @@ interface PostPagination {
 
 interface HomeProps {
   postsPagination: PostPagination;
+  preview: boolean;
 }
 
-export default function Home({ postsPagination }: HomeProps) {
+export default function Home({ postsPagination, preview }: HomeProps) {
   const [posts, setPosts] = useState(postsPagination.results);
   const [nextPage, setNextPage] = useState(postsPagination.next_page);
 
@@ -99,11 +100,21 @@ export default function Home({ postsPagination }: HomeProps) {
           <></>
         )}
       </main>
+      {preview && (
+        <aside>
+          <Link href="/api/exit-preview">
+            <a>Sair do modo Preview</a>
+          </Link>
+        </aside>
+      )}
     </>
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async ({
+  preview = false,
+  previewData,
+}) => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query(
     ['', Prismic.Predicates.at('document.type', 'post')],
@@ -117,10 +128,11 @@ export const getStaticProps: GetStaticProps = async () => {
     results: postsResponse.results.map(post => {
       return {
         ...post,
+        ref: previewData?.ref ?? null,
       };
     }),
   };
   return {
-    props: { postsPagination: postsPaginationReturn },
+    props: { postsPagination: postsPaginationReturn, preview },
   };
 };
